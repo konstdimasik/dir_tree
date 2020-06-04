@@ -4,56 +4,9 @@ import (
 	"fmt"
 	"io"
 	"os"
-	// "path/filepath"
-	// "strings
 	"io/ioutil"
 	"log"
 )
-
-func printing(filePath string, f os.FileInfo, printFiles bool, levelInd int, lastInd int){
-
-	var tempGraph string
-	var size string
-	var tempi int
-	// var tempi int
-
-	if !(isItLast(filePath, f, printFiles)) && (lastInd > 0) {
-		tempi = levelInd
-		levelInd = levelInd - lastInd
-		lastInd = tempi
-	}
-
-	if isItLast(filePath, f, printFiles) && (lastInd > 0) {
-		tempi = levelInd
-		levelInd = levelInd - (lastInd - 1)
-		lastInd = tempi - levelInd + 1
-	}
-
-	for i := 0; i < levelInd; i++ {
-		tempGraph = tempGraph + "│   "
-	}
-
-	for j := 0; j < lastInd-1; j++ {
-		tempGraph = tempGraph + "    "
-	}
-
-	if isItLast(filePath, f, printFiles) {
-		tempGraph = tempGraph + "└───" + f.Name()
-	} else {
-		tempGraph = tempGraph + "├───"+f.Name()
-	}
-
-	if !f.IsDir(){
-		if f.Size() == 0 {
-			size = " (empty)"
-		} else {
-			size = fmt.Sprintf(" (%vb)",f.Size())
-		}
-		tempGraph = tempGraph + size
-	}
-
-	 fmt.Println(tempGraph)
-}
 
 func isItLast (filePath string, f os.FileInfo, printFiles bool) bool {
 	files, err := ioutil.ReadDir(filePath)
@@ -83,7 +36,12 @@ func isItLast (filePath string, f os.FileInfo, printFiles bool) bool {
 	return false
 }
 
-func levelDir(filePath string, printFiles bool, levelInd int, lastInd int){
+func levelDir(filePath string, printFiles bool, dirGraph string){
+
+	var tempGraph string
+	var tempSize string
+	var printGraph string
+
 	files, err := ioutil.ReadDir(filePath)
     if err != nil {
         log.Fatal(err)
@@ -93,22 +51,35 @@ func levelDir(filePath string, printFiles bool, levelInd int, lastInd int){
 		if !file.IsDir() && !printFiles {
 			continue
 		}
+
 		if isItLast(filePath, file, printFiles) {
-			lastInd = lastInd + 1
+			printGraph = dirGraph + "└───" + file.Name()
+			tempGraph = "    "
+		} else {
+			printGraph = dirGraph + "├───"+file.Name()
+			tempGraph = "│   "
 		}
 
-		printing(filePath, file, printFiles, levelInd, lastInd)
+		if !file.IsDir(){
+			if file.Size() == 0 {
+				tempSize = " (empty)"
+			} else {
+				tempSize = fmt.Sprintf(" (%vb)",file.Size())
+			}
+			printGraph = printGraph + tempSize
+		}
+
+		 fmt.Println(printGraph)
 
 		if file.IsDir() {
-			levelDir(filePath + "/" + file.Name(), printFiles, levelInd+1, lastInd)
+			levelDir(filePath + "/" + file.Name(), printFiles, dirGraph + tempGraph)
 		}
     }
 }
 
 func dirTree(out io.Writer, filePath string, printFiles bool) error  {
-	var levelInd = 0
-	var lastInd = 0
-	levelDir(filePath, printFiles, levelInd, lastInd)
+	var dirGraph = ""
+	levelDir(filePath, printFiles, dirGraph)
 
 	return nil
 }
