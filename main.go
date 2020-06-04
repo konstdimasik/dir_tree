@@ -36,7 +36,7 @@ func isItLast (filePath string, f os.FileInfo, printFiles bool) bool {
 	return false
 }
 
-func levelDir(filePath string, printFiles bool, dirGraph string){
+func levelDir(out io.Writer, filePath string, printFiles bool, dirGraph string) error {
 
 	var tempGraph string
 	var tempSize string
@@ -52,12 +52,16 @@ func levelDir(filePath string, printFiles bool, dirGraph string){
 			continue
 		}
 
+		if file.Name() == ".DS_Store" {
+			continue
+		}
+
 		if isItLast(filePath, file, printFiles) {
 			printGraph = dirGraph + "└───" + file.Name()
-			tempGraph = "    "
+			tempGraph = "	"
 		} else {
 			printGraph = dirGraph + "├───"+file.Name()
-			tempGraph = "│   "
+			tempGraph = "│	"
 		}
 
 		if !file.IsDir(){
@@ -69,19 +73,26 @@ func levelDir(filePath string, printFiles bool, dirGraph string){
 			printGraph = printGraph + tempSize
 		}
 
-		 fmt.Println(printGraph)
+		// fmt.Println(printGraph)
+
+	 	_, err := fmt.Fprintln(out, printGraph)
+		if err != nil {
+			 fmt.Fprintf(os.Stderr, "Fprintln: %v\n", err)
+		}
 
 		if file.IsDir() {
-			levelDir(filePath + "/" + file.Name(), printFiles, dirGraph + tempGraph)
+			levelDir(out, filePath + "/" + file.Name(), printFiles, dirGraph + tempGraph)
 		}
     }
+
+	return err
 }
 
 func dirTree(out io.Writer, filePath string, printFiles bool) error  {
 	var dirGraph = ""
-	levelDir(filePath, printFiles, dirGraph)
+	err := levelDir(out, filePath, printFiles, dirGraph)
 
-	return nil
+	return err
 }
 
 func main() {
